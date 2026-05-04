@@ -620,7 +620,15 @@ def train_model(n_clicks, data, target, selected_features):
         remainder="drop"
     )
 
-    classifier, param_grid = get_model_and_params()
+    # Use the best model from Stage 2.
+    # Change this if KNN won in your Stage 2 results.
+    classifier = DecisionTreeClassifier(
+        criterion="gini",
+        max_depth=4,
+        min_samples_split=2,
+        min_samples_leaf=1,
+        random_state=42
+    )
 
     pipeline = Pipeline(
         steps=[
@@ -639,41 +647,22 @@ def train_model(n_clicks, data, target, selected_features):
         stratify=stratify_value
     )
 
-    f1_average = get_f1_average(y_train_app)
-    scoring_method = "f1" if f1_average == "binary" else "f1_weighted"
+    pipeline.fit(X_train_app, y_train_app)
 
-    min_class_count = y_train_app.value_counts().min()
-    cv_folds = min(5, min_class_count)
-
-    if cv_folds < 2:
-        return "Not enough samples per class for cross-validation."
-
-    grid = GridSearchCV(
-        estimator=pipeline,
-        param_grid=param_grid,
-        cv=cv_folds,
-        scoring=scoring_method,
-        n_jobs=-1
-    )
-
-    grid.fit(X_train_app, y_train_app)
-
-    best_model = grid.best_estimator_
-
-    y_pred = best_model.predict(X_test_app)
+    y_pred = pipeline.predict(X_test_app)
 
     accuracy = accuracy_score(y_test_app, y_pred)
+    f1_average = get_f1_average(y_test_app)
     f1 = f1_score(y_test_app, y_pred, average=f1_average)
 
-    TRAINED_MODEL["model"] = best_model
+    TRAINED_MODEL["model"] = pipeline
     TRAINED_MODEL["features"] = selected_features
     TRAINED_MODEL["target"] = target
     TRAINED_MODEL["numeric_features"] = numeric_features
     TRAINED_MODEL["categorical_features"] = categorical_features
 
     return html.Div([
-        html.Div(f"Best Model Used: {BEST_CLASSIFIER}"),
-        html.Div(f"Best Parameters: {grid.best_params_}"),
+        html.Div("Best Model Used: Decision Tree Classifier"),
         html.Div(f"Accuracy: {accuracy:.3f}"),
         html.Div(f"F1-score: {f1:.3f}")
     ])

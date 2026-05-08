@@ -17,18 +17,14 @@ from sklearn.pipeline import Pipeline
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.impute import SimpleImputer
-from sklearn.tree import DecisionTreeClassifier
+from sklearn.linear_model import LogisticRegression
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import accuracy_score, f1_score
 
 
-# ============================================================
-# Change this depending on which model won in Stage 2
-# Options: "decision_tree" or "knn"
-# ============================================================
 
-BEST_CLASSIFIER = "decision_tree"
 
+BEST_CLASSIFIER = "logistic_regression"
 
 # Global storage for trained model
 TRAINED_MODEL = {
@@ -119,17 +115,14 @@ def get_model_and_params():
         return model, params
 
     else:
-        model = DecisionTreeClassifier(random_state=42)
+        model = LogisticRegression(max_iter=1000, random_state=42)
 
         params = {
-            "model__criterion": ["gini", "entropy"],
-            "model__max_depth": [2, 3, 4, 5, 6, None],
-            "model__min_samples_split": [2, 5, 10],
-            "model__min_samples_leaf": [1, 2, 4]
+            "model__C": [0.01, 0.1, 1, 10, 100],
+            "model__solver": ["lbfgs"],
         }
 
         return model, params
-
 
 def get_f1_average(y):
     unique_values = set(pd.Series(y).dropna().unique())
@@ -620,13 +613,9 @@ def train_model(n_clicks, data, target, selected_features):
         remainder="drop"
     )
 
-    # Use the best model from Stage 2.
-    # Change this if KNN won in your Stage 2 results.
-    classifier = DecisionTreeClassifier(
-        criterion="gini",
-        max_depth=4,
-        min_samples_split=2,
-        min_samples_leaf=1,
+        # Use the best model from Stage 2: Logistic Regression.
+    classifier = LogisticRegression(
+        max_iter=1000,
         random_state=42
     )
 
@@ -662,7 +651,7 @@ def train_model(n_clicks, data, target, selected_features):
     TRAINED_MODEL["categorical_features"] = categorical_features
 
     return html.Div([
-        html.Div("Best Model Used: Decision Tree Classifier"),
+        html.Div("Best Model Used: Logistic Regression"),
         html.Div(f"Accuracy: {accuracy:.3f}"),
         html.Div(f"F1-score: {f1:.3f}")
     ])
